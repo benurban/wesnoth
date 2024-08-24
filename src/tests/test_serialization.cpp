@@ -583,6 +583,10 @@ BOOST_AUTO_TEST_CASE( test_wildcard_string_match )
 	BOOST_CHECK(!utils::wildcard_string_match("", "+++?++"));
 	BOOST_CHECK(!utils::wildcard_string_match("", "?"));
 	BOOST_CHECK(!utils::wildcard_string_match("", "???"));
+
+	BOOST_CHECK(utils::wildcard_string_match("foo", "foo,bar,baz"));
+	BOOST_CHECK(utils::wildcard_string_match("bar", "foo,bar,baz"));
+	BOOST_CHECK(utils::wildcard_string_match("baz", "foo,bar,baz"));
 }
 
 BOOST_AUTO_TEST_CASE( test_base64_encodings )

@@ -702,7 +702,12 @@ bool word_match(const std::string& message, const std::string& word) {
 }
 
 bool wildcard_string_match(const std::string& str, const std::string& match) {
-	const bool wild_matching = (!match.empty() && (match[0] == '*' || match[0] == '+'));
+	if(match.empty()) return str.empty();
+	if(match[0] == ',') {
+		if(str.empty()) return true;
+		return wildcard_string_match(str, match.substr(1));
+	}
+	const bool wild_matching = match[0] == '*' || match[0] == '+';
 	const std::string::size_type solid_begin = match.find_first_not_of("*+");
 	const bool have_solids = (solid_begin != std::string::npos);
 	// Check the simple cases first
@@ -713,7 +718,7 @@ bool wildcard_string_match(const std::string& str, const std::string& match) {
 		return false;
 	}
 
-	const std::string::size_type solid_end = match.find_first_of("*+", solid_begin);
+	const std::string::size_type solid_end = match.find_first_of("*+,", solid_begin);
 	const std::string::size_type solid_len = (solid_end == std::string::npos)
 		? match.length() - solid_begin : solid_end - solid_begin;
 	// Since + always consumes at least one character, increment current if the match
@@ -737,6 +742,8 @@ bool wildcard_string_match(const std::string& str, const std::string& match) {
 			const std::string consumed_str = (solid_len < test_len)
 				? str.substr(current+solid_len) : "";
 			matches = wildcard_string_match(consumed_str, consumed_match);
+		} else if(solid_end != std::string::npos && match[solid_end] == ',') {
+			matches = wildcard_string_match(str, match.substr(solid_end + 1));
 		}
 	} while(wild_matching && !matches && ++current < str.length());
 	return matches;
