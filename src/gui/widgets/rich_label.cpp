@@ -155,7 +155,7 @@ void rich_label::add_image(config& curr_item, std::string name, std::string alig
 	point curr_img_size = get_image_size(curr_item);
 	if (floating) {
 		float_size.x = curr_img_size.x + padding_;
-		float_size.y += curr_img_size.y + padding_;
+		float_size.y += curr_img_size.y;
 	} else {
 		img_size.x += curr_img_size.x + padding_;
 		img_size.y = std::max(img_size.y, curr_img_size.y);
@@ -200,7 +200,7 @@ void rich_label::add_link(config& curr_item, std::string name, std::string dest,
 
 	setup_text_renderer(curr_item, w_ - x_ - img_width);
 	t_start.x = x_ + get_xy_from_offset(utf8::size(curr_item["text"].str())).x;
-	t_start.y = prev_blk_height_ + get_xy_from_offset(utf8::size(curr_item["text"].str())).y - padding_;
+	t_start.y = prev_blk_height_ + get_xy_from_offset(utf8::size(curr_item["text"].str())).y;
 	DBG_GUI_RL << "link text start:" << t_start;
 
 	std::string link_text = name.empty() ? dest : name;
@@ -470,7 +470,6 @@ config rich_label::get_parsed_text(const config& parsed_text)
 				new_text_block = false;
 			}
 
-			prev_blk_height_ -= padding_;
 			in_table = false;
 			is_image = false;
 			is_text = false;
@@ -485,6 +484,7 @@ config rich_label::get_parsed_text(const config& parsed_text)
 			if (is_image && (!is_float)) {
 				if (line.size() > 0 && line.at(0) == '\n') {
 					x_ = 0;
+					prev_blk_height_ += padding_;
 					(*curr_item)["actions"] = "([set_var('pos_x', 0), set_var('pos_y', pos_y + image_height + padding)])";
 					line = line.substr(1);
 				} else {
@@ -493,9 +493,9 @@ config rich_label::get_parsed_text(const config& parsed_text)
 			}
 
 			if (curr_item == nullptr || new_text_block) {
-				if (!in_table) {
+				if (!in_table && curr_item != nullptr) {
 					// table will calculate this by itself, no need to calculate here
-					prev_blk_height_ += txt_height_ + padding_;
+					prev_blk_height_ += txt_height_;
 					txt_height_ = 0;
 				}
 
