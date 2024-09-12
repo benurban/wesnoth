@@ -8,6 +8,9 @@
     android:versionName="1.19"
     android:installLocation="auto">
 
+    <uses-sdk android:minSdkVersion="29"
+              android:targetSdkVersion="29" />
+
     <!-- OpenGL ES 2.0 -->
     <uses-feature android:glEsVersion="0x00020000" />
 
@@ -75,7 +78,6 @@
             android:alwaysRetainTaskState="true"
             android:launchMode="singleInstance"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
-            android:preferMinimalPostProcessing="true"
             android:exported="true"
             >
             <intent-filter>

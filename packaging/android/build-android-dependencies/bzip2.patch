@@ -1,0 +1,12 @@
+diff -rupN --no-dereference bzip2-1.0.8/Makefile bzip2-1.0.8-new/Makefile
+--- bzip2-1.0.8/Makefile	2019-07-13 13:50:05.000000000 -0400
++++ bzip2-1.0.8-new/Makefile	2024-08-28 21:49:53.496192883 -0400
+@@ -35,7 +35,7 @@ OBJS= blocksort.o  \
+       decompress.o \
+       bzlib.o
+ 
+-all: libbz2.a bzip2 bzip2recover test
++all: libbz2.a bzip2 bzip2recover
+ 
+ bzip2: libbz2.a bzip2.o
+ 	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2 bzip2.o -L. -lbz2

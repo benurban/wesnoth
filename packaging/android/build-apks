@@ -1,30 +1,117 @@
 #!/bin/bash -xe
 
-REPO=`pwd`/../..
+# build-apks
+# Builds the Wesnoth APK for Android.
 
-rm -rf /tmp/wesnoth-aab-base
+# Prerequisites:
+# * wget is used to download bundletool. You can download it yourself (see url,
+#   below) to bypass this requirement.
+# * The Android SDK must be installed, along with at least one version of the
+#   NDK.
+# * The build products from build-android-deps must be in $PREFIXDIR.
+# * python3 3.6 or later
+# * scons
+# FIXME: Figure out minimum version numbers.
+# FIXME: Find out if anything else is needed.
 
-for arch in "x86_64" "armeabi-v7a" "arm64-v8a" "x86"
+# Environment variables used by this script and setup-toolchains.py:
+# DOWNLOADDIR  Files downloaded by the script will wind up here. The script
+#              creates this if it doesn't exist.
+#     Default: /tmp/android-dl
+# PREFIXDIR    This should contain the dependencies. See build-android-deps.sh.
+#     Default: /tmp/android-prefix
+# APKBASEDIR   Working space for the SCons portion of the build. The script
+#              creates this if it doesn't exist.
+#     Default: /tmp
+# AABBASEDIR   Staging directory for the packaging portion of the build.
+#              Tbe script deletes this and recreates it each time it runs.
+#     Default: /tmp/wesnoth-aab-base
+# AABOUTPUT    The name of the output .aab
+#     Default: $ORIGIN/wesnoth-debug.aab
+# APKSOUTPUT   The name of the output .apks.
+#     Default: $ORIGIN/wesnoth-debug.apks
+# APKOUTPUT    The name of the output .apk.
+#     Default: $ORIGIN/wesnoth-debug.apk
+# ANDROID_SDK_ROOT
+#              Root directory of the Android SDK.
+#     Default: /opt/android-sdk-update-manager
+# ANDROID_NDK_ROOT
+#              Root directory of the Android NDK.
+#     Default: $ANDROID_SDK_ROOT/ndk/23.1.7779620
+# API          The version of the Android API to use
+#     Default: 29
+# APP_ABI      A space-separated list of the Android ABIs to include in the
+#              build. Use "all" to build all four: armeabi-v7a arm64-v8a
+#              x86 x86_64
+#     Default: all
+
+cd "$(dirname $0)"
+ORIGIN="$(pwd)"
+pushd ../..
+	REPO="$(pwd)"
+popd
+: ${ANDROID_SDK_ROOT:=/opt/android-sdk-update-manager}
+: ${ANDROID_NDK_ROOT:="$ANDROID_SDK_ROOT/ndk/23.1.7779620"}
+: ${PREFIXDIR:=/tmp/android-prefix}
+: ${DOWNLOADDIR:=/tmp/android-dl}
+: ${AABBASEDIR:=/tmp/wesnoth-aab-base}
+: ${APKBASEDIR:=/tmp}
+: ${API:=29}
+: ${APP_ABI:=all}
+if [[ "$APP_ABI" == "all" ]]
+then
+	abis="armeabi-v7a arm64-v8a x86 x86_64"
+else
+	abis="$APP_ABI"
+fi
+: ${AABOUTPUT:="$ORIGIN/wesnoth-debug.aab"}
+: ${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
+: ${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
+
+os=`uname -o`
+if [[ $os == Android ]]
+then
+	# Limit threading on Android to keep from using more memory than the device can handle
+	nproc=1
+	# Android needs a custom aapt2; default to one in $PATH
+	: ${AAPT2:=`which aapt2`}
+	extra_flags="--aapt2=$AAPT2"
+else
+	nproc=`nproc`
+	extra_flags=
+fi
+
+mkdir -p "$DOWNLOADDIR"
+url=https://github.com/google/bundletool/releases/download/1.16.0/bundletool-all-1.16.0.jar
+bundletool="$DOWNLOADDIR/$(basename $url)"
+if [ ! -f "$bundletool" ]
+then
+	wget -nc $url -P "$DOWNLOADDIR"
+fi
+
+rm -rf "$AABBASEDIR" || :
+
+for arch in $abis
 do
-	mkdir -p /tmp/wesnoth-$arch
-	pushd /tmp/wesnoth-$arch
-		scons -j`nproc` -Y $REPO prefix=/tmp/android-prefix/$arch host=android-$arch ndkdir=/opt/android-sdk-update-manager/ndk/23.1.7779620 android_home=/opt/android-sdk-update-manager/ apk
+	mkdir -p "$APKBASEDIR/wesnoth-$arch"
+	pushd "$APKBASEDIR/wesnoth-$arch"
+		scons -j$nproc -Y "$REPO" prefix="$PREFIXDIR/$arch" host=android-$arch ndkdir="$ANDROID_NDK_ROOT" android_home="$ANDROID_SDK_ROOT" android_api=$API apk
 	popd
-	mkdir -p /tmp/wesnoth-aab-base
-	pushd /tmp/wesnoth-aab-base
-		unzip -n /tmp/wesnoth-$arch/packaging/android/wesnoth-debug.apk
+	mkdir -p "$AABBASEDIR"
+	pushd "$AABBASEDIR"
+		unzip -n "$APKBASEDIR/wesnoth-$arch/packaging/android/wesnoth-debug.apk"
 	popd
 done
-pushd /tmp/wesnoth-aab-base
-	mkdir manifest
+pushd "$AABBASEDIR"
+	mkdir manifest7
 	mv AndroidManifest.xml manifest/
 	mkdir dex
 	mv classes.dex dex/
 	zip -r base.zip *
 popd
-wget -nc https://github.com/google/bundletool/releases/download/1.16.0/bundletool-all-1.16.0.jar
-BUNDLETOOL=bundletool-all-1.16.0.jar
-rm wesnoth-debug.aab
-java -jar $BUNDLETOOL build-bundle --modules=/tmp/wesnoth-aab-base/base.zip --output=wesnoth-debug.aab
-rm wesnoth-debug.apks
-java -jar $BUNDLETOOL build-apks --bundle=wesnoth-debug.aab --output=wesnoth-debug.apks
+rm -f "$AABOUTPUT" || :
+java -jar "$bundletool" build-bundle --modules="$AABBASEDIR/base.zip" --output="$AABOUTPUT"
+rm -f "$APKSOUTPUT" || :
+java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --output="$APKSOUTPUT" --mode=universal $extra_flags
+unzip "$APKSOUTPUT" universal.apk
+mv universal.apk "$APKOUTPUT"

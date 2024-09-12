@@ -108,7 +108,7 @@ opts.AddVariables(
     ('host', 'Cross-compile host.', ''),
     PathVariable('ndkdir', 'Root directory of android NDK to use', "", OptionalPath),
     PathVariable('android_home', 'Root directory of android SDK to use', "", OptionalPath),
-    ('android_api', 'Target android api', 31),
+    ('android_api', 'Target android api', 29),
     EnumVariable('multilib_arch', 'Address model for multilib compiler: 32-bit or 64-bit', "", ["", "32", "64"]),
     ('jobs', 'Set the number of parallel compilations', "1", lambda key, value, env: int(value), int),
     BoolVariable('distcc', 'Use distcc', False),
