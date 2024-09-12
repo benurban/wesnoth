@@ -35,6 +35,8 @@ struct luaW_Registry {
 	getters_list getters;
 	using setters_list = std::map<std::string, std::function<bool(lua_State*,int,bool)>>;
 	setters_list setters;
+	using validators_list = std::map<std::string, std::function<bool(lua_State*)>>;
+	validators_list validators;
 	std::string private_metatable;
 	std::vector<std::string> public_metatable;
 	luaW_Registry() = delete;
@@ -44,6 +46,8 @@ struct luaW_Registry {
 	int set(lua_State* L);
 	int dir(lua_State* L);
 };
+
+enum class lua_attrfunc_type { getter, setter, validator };
 
 template<typename object_type, typename value_type>
 struct lua_getter
@@ -59,17 +63,24 @@ struct lua_setter
 	virtual ~lua_setter() = default;
 };
 
+template<typename object_type>
+struct lua_validator
+{
+	virtual bool is_active(lua_State* L, const object_type& obj) const = 0;
+	virtual ~lua_validator() = default;
+};
+
 template<typename T> struct lua_object_traits;
 
-template<typename object_type, typename value_type, typename action_type, bool setter>
+template<typename object_type, typename value_type, typename action_type, lua_attrfunc_type type>
 void register_lua_attribute(const char* name)
 {
 	using obj_traits = lua_object_traits<object_type>;
-	using map_type = std::conditional_t<setter, luaW_Registry::setters_list, luaW_Registry::getters_list>;
+	using map_type = std::conditional_t<type == lua_attrfunc_type::validator, luaW_Registry::validators_list, std::conditional_t<type == lua_attrfunc_type::setter, luaW_Registry::setters_list, luaW_Registry::getters_list>>;
 	using callback_type = typename map_type::mapped_type;
 	map_type* map;
 	callback_type fcn;
-	if constexpr(setter) {
+	if constexpr(type == lua_attrfunc_type::setter) {
 		map = &luaW_Registry::lookup.at(obj_traits::metatable).get().setters;
 		fcn = [action = action_type()](lua_State* L, int idx, bool nop) {
 			if(nop) return true;
@@ -77,12 +88,17 @@ void register_lua_attribute(const char* name)
 			action.set(L, obj, lua_check<value_type>(L, idx));
 			return true;
 		};
-	} else {
+	} else if constexpr(type == lua_attrfunc_type::getter) {
 		map = &luaW_Registry::lookup.at(obj_traits::metatable).get().getters;
 		fcn = [action = action_type()](lua_State* L, bool nop) {
 			if(nop) return true;
 			lua_push(L, action.get(L, obj_traits::get(L, 1)));
 			return true;
+		};
+	} else if constexpr(type == lua_attrfunc_type::validator) {
+		map = &luaW_Registry::lookup.at(obj_traits::metatable).get().validators;
+		fcn = [action = action_type()](lua_State* L) {
+			return action.is_active(L, obj_traits::get(L, 1));
 		};
 	}
 	(*map)[std::string(name)] = fcn;
@@ -96,7 +112,7 @@ struct BOOST_PP_CAT(getter_, id) : public lua_getter<obj_type, value_type> { \
 struct BOOST_PP_CAT(getter_adder_, id) { \
 	BOOST_PP_CAT(getter_adder_, id) () \
 	{ \
-		register_lua_attribute<obj_type, value_type, BOOST_PP_CAT(getter_, id), false>(name); \
+		register_lua_attribute<obj_type, value_type, BOOST_PP_CAT(getter_, id), lua_attrfunc_type::getter>(name); \
 	} \
 }; \
 static BOOST_PP_CAT(getter_adder_, id) BOOST_PP_CAT(getter_adder_instance_, id) ; \
@@ -111,11 +127,26 @@ struct BOOST_PP_CAT(setter_, id) : public lua_setter<obj_type, value_type> { \
 struct BOOST_PP_CAT(setter_adder_, id) { \
 	BOOST_PP_CAT(setter_adder_, id) ()\
 	{ \
-		register_lua_attribute<obj_type, value_type, BOOST_PP_CAT(setter_, id), true>(name); \
+		register_lua_attribute<obj_type, value_type, BOOST_PP_CAT(setter_, id), lua_attrfunc_type::setter>(name); \
 	} \
 }; \
 static BOOST_PP_CAT(setter_adder_, id) BOOST_PP_CAT(setter_adder_instance_, id); \
 void BOOST_PP_CAT(setter_, id)::set([[maybe_unused]] lua_State* L, BOOST_PP_CAT(setter_, id)::object_type& obj_name, const value_type& value) const
+
+
+#define LATTR_VALID5(name, obj_type, obj_name, id) \
+struct BOOST_PP_CAT(check_, id) : public lua_validator<obj_type> { \
+	using object_type = obj_type; \
+	bool is_active(lua_State* L, const object_type& obj_name) const override; \
+}; \
+struct BOOST_PP_CAT(check_adder_, id) { \
+	BOOST_PP_CAT(check_adder_, id) ()\
+	{ \
+		register_lua_attribute<obj_type, void, BOOST_PP_CAT(check_, id), lua_attrfunc_type::validator>(name); \
+	} \
+}; \
+static BOOST_PP_CAT(check_adder_, id) BOOST_PP_CAT(check_adder_instance_, id); \
+bool BOOST_PP_CAT(check_, id)::is_active([[maybe_unused]] lua_State* L, const BOOST_PP_CAT(check_, id)::object_type& obj_name) const
 
 
 /**
@@ -127,3 +158,5 @@ void BOOST_PP_CAT(setter_, id)::set([[maybe_unused]] lua_State* L, BOOST_PP_CAT(
 #define LATTR_GETTER(name, value_type, obj_type, obj_name) LATTR_GETTER5(name, value_type, obj_type, obj_name, __LINE__)
 
 #define LATTR_SETTER(name, value_type, obj_type, obj_name) LATTR_SETTER5(name, value_type, obj_type, obj_name, __LINE__)
+
+#define LATTR_VALID(name, obj_type, obj_name) LATTR_VALID5(name, obj_type, obj_name, __LINE__)
