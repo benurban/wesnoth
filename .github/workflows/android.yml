@@ -9,6 +9,7 @@ jobs:
     env:
       NDK_VER: r26d
       BUILDDIR: /tmp/android-build
+      ANDROID_NDK_ROOT: "$BUILDDIR/android-ndk-$NDK_VER"
     
     steps:
       - name: Checkout Repo
@@ -39,10 +40,10 @@ jobs:
           packages: 'tools platform-tools build-tools;34.0.0'
       
       - name: Download and build wesnoth dependencies
-        run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh "$BUILDDIR/android-ndk-$NDK_VER";
+        run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
       - name: Build Wesnoth and create APKS
-        run: ls -lh; cd packaging/android; ./build-apks "$BUILDDIR/android-ndk-$NDK_VER";
+        run: ls -lh; cd packaging/android; ./build-apks;
 
       - name: Upload APKS
         uses: actions/upload-artifact@v4.3.1
