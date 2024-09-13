@@ -7,26 +7,26 @@ jobs:
     
     runs-on: ubuntu-latest
     env:
-      NDK_VER: r26d
-      BUILDDIR: /tmp/android-build
-      ANDROID_NDK_ROOT: /tmp/android-build/android-ndk-r26d
-    
+      ANDROID_SDK_ROOT: ~/.android/sdk
+      ANDROID_NDK_ROOT: ~/.android/sdk/ndk/26.3.11579264
+      PREFIXDIR: ~/work/wesnoth/wesnoth/packaging/android/prefix
+      DOWNLOADDIR: ~/work/wesnoth/wesnoth/packaging/android/download
+      BUILDDIR: ~/work/wesnoth/wesnoth/packaging/android/build
+      AABBASEDIR: ~/work/wesnoth/wesnoth/packaging/android/aab-base
+      APKBASEDIR: ~/work/wesnoth/wesnoth/packaging/android
+      AABOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.aab
+      APKSOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.apks
+      APKOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.apk
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4.1.1
-        
+
       - name: Fetch submodules
         run: git submodule update --init --recursive; ls -lh;
 
       - name: Install auxiliary build tools
         run: sudo apt-get install -y meson gperf scons
-        
-      - name: Set up Android NDK
-        run: |
-          ### Download ndk
-          wget -nc "https://dl.google.com/android/repository/android-ndk-$NDK_VER-linux.zip" -P $BUILDDIR
-          unzip "$BUILDDIR/android-ndk-$NDK_VER-linux.zip" -d "$BUILDDIR"
-          ls -lh "$BUILDDIR"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4.0.0
@@ -37,8 +37,8 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'tools platform-tools build-tools;34.0.0'
-      
+          packages: 'tools platform-tools build-tools;34.0.0 ndk;26.3.11579264'
+
       - name: Download and build wesnoth dependencies
         run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
