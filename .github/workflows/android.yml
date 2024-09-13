@@ -7,16 +7,23 @@ jobs:
     
     runs-on: ubuntu-latest
     env:
+      ANDROID_API: 29
+      ANDROID_BUILD_TOOLS_VERSION: 34.0.0
+      ANDROID_NDK_VERSION: 26.3.11579264
+      ANDROID_SDK_PACKAGES: 'tools platform-tools platform;android-${{ env.ANDROID_API }} build-tools;${{ env.ANDROID_BUILD_TOOLS_VERSION }} ndk;${{ env.ANDROID_NDK_VERSION }}'
+      JDK_VERSION: 17
+      API: ${{ env.ANDROID_API }}
       ANDROID_SDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk
-      ANDROID_NDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk/ndk/26.3.11579264
-      PREFIXDIR: ${{ github.WORKSPACE }}/packaging/android/prefix
-      DOWNLOADDIR: ${{ github.WORKSPACE }}/packaging/android/download
-      BUILDDIR: ${{ github.WORKSPACE }}/packaging/android/build
-      AABBASEDIR: ${{ github.WORKSPACE }}/packaging/android/aab-base
-      APKBASEDIR: ${{ github.WORKSPACE }}/packaging/android
-      AABOUTPUT: ${{ github.WORKSPACE }}/packaging/android/wesnoth-debug.aab
-      APKSOUTPUT: ${{ github.WORKSPACE }}/packaging/android/wesnoth-debug.apks
-      APKOUTPUT: ${{ github.WORKSPACE }}/android/wesnoth-debug.apk
+      ANDROID_NDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
+      BUILDBASEDIR: ${{ github.WORKSPACE }}/packaging/android
+      PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
+      DOWNLOADDIR: ${{ env.BUILDBASEDIR }}/download
+      BUILDDIR: ${{ env.BUILDBASEDIR }}/build
+      AABBASEDIR: ${{ env.BUILDBASEDIR }}/aab-base
+      APKBASEDIR: ${{ env.BUILDBASEDIR }}
+      AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
+      APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
+      APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
 
     steps:
       - name: Checkout Repo
@@ -28,22 +35,37 @@ jobs:
       - name: Install auxiliary build tools
         run: sudo apt-get install -y meson gperf scons
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4.0.0
         with:
-          java-version: '17'
+          java-version: '${{ JDK_VERSION }}'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
+      - name: Cache Android SDK
+        id: cache-android-sdk
+        uses: actions/cache@v3
+        with:
+          key: android-sdk ${{ env.ANDROOD_SDK_PACKAGES }}
+          path: ${{ env.ANDROID_SDK_ROOT }}
+
+      - if ${{ steps.cache-android-sdk.cache-hit  != true }}
+        name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'tools platform-tools build-tools;34.0.0 ndk;26.3.11579264'
+          packages: ${{ env.ANDROID_SDK_PACKAGES }}
 
-      - name: Download and build wesnoth dependencies
+      - name: Cache Wesnoth dependencies
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          key: wesnoth-android-deps-r1
+          path: ${{ env.PREFIXDIR }}
+
+      - name: Download and build Wesnoth dependencies
         run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
       - name: Build Wesnoth and create APKS
-        run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/34.0.0 ./build-apks;
+        run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }} ./build-apks;
 
       - name: Upload APKS
         uses: actions/upload-artifact@v4.3.1
