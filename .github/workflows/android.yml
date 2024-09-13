@@ -48,7 +48,7 @@ jobs:
           key: android-sdk ${{ env.ANDROOD_SDK_PACKAGES }}
           path: ${{ env.ANDROID_SDK_ROOT }}
 
-      - if ${{ steps.cache-android-sdk.cache-hit  != 'true' }}
+      - if: ${{ steps.cache-android-sdk.outputs.cache-hit  != 'true' }}
         name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
