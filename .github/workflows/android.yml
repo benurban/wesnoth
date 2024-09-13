@@ -7,16 +7,16 @@ jobs:
     
     runs-on: ubuntu-latest
     env:
-      ANDROID_SDK_ROOT: ~/.android/sdk
-      ANDROID_NDK_ROOT: ~/.android/sdk/ndk/26.3.11579264
-      PREFIXDIR: ~/work/wesnoth/wesnoth/packaging/android/prefix
-      DOWNLOADDIR: ~/work/wesnoth/wesnoth/packaging/android/download
-      BUILDDIR: ~/work/wesnoth/wesnoth/packaging/android/build
-      AABBASEDIR: ~/work/wesnoth/wesnoth/packaging/android/aab-base
-      APKBASEDIR: ~/work/wesnoth/wesnoth/packaging/android
-      AABOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.aab
-      APKSOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.apks
-      APKOUTPUT: ~/work/wesnoth/wesnoth/packaging/android/wesnoth-debug.apk
+      ANDROID_SDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk
+      ANDROID_NDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk/ndk/26.3.11579264
+      PREFIXDIR: ${{ github.WORKSPACE }}/packaging/android/prefix
+      DOWNLOADDIR: ${{ github.WORKSPACE }}/packaging/android/download
+      BUILDDIR: ${{ github.WORKSPACE }}/packaging/android/build
+      AABBASEDIR: ${{ github.WORKSPACE }}/packaging/android/aab-base
+      APKBASEDIR: ${{ github.WORKSPACE }}/packaging/android
+      AABOUTPUT: ${{ github.WORKSPACE }}/packaging/android/wesnoth-debug.aab
+      APKSOUTPUT: ${{ github.WORKSPACE }}/packaging/android/wesnoth-debug.apks
+      APKOUTPUT: ${{ github.WORKSPACE }}/android/wesnoth-debug.apk
 
     steps:
       - name: Checkout Repo
@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name: wesnoth-debug.apks
-          path: "packaging/android/wesnoth-debug.apks"
+          path: ${{ env.APKSOUTPUT }}
             
             #- name: Grant execute permission for gradlew
             #  run: chmod +x gradlew
