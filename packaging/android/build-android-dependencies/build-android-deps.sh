@@ -73,9 +73,9 @@ PACKAGES=()
 
 cd `dirname "$0"`
 ORIGIN=`pwd`
-: ${BUILDDIR:=/tmp/android-build}
-: ${PREFIXDIR:=/tmp/android-prefix}
-: ${DOWNLOADDIR:=/tmp/android-dl}
+: BUILDDIR=${BUILDDIR:=/tmp/android-build}
+: PREFIXDIR=${PREFIXDIR:=/tmp/android-prefix}
+: DOWNLOADDIR=${DOWNLOADDIR:=/tmp/android-dl}
 
 export PREFIXDIR
 

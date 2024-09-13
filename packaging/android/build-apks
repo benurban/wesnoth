@@ -50,23 +50,23 @@ ORIGIN="$(pwd)"
 pushd ../..
 	REPO="$(pwd)"
 popd
-: ${ANDROID_SDK_ROOT:=/opt/android-sdk-update-manager}
-: ${ANDROID_NDK_ROOT:="$ANDROID_SDK_ROOT/ndk/23.1.7779620"}
-: ${PREFIXDIR:=/tmp/android-prefix}
-: ${DOWNLOADDIR:=/tmp/android-dl}
-: ${AABBASEDIR:=/tmp/wesnoth-aab-base}
-: ${APKBASEDIR:=/tmp}
-: ${API:=29}
-: ${APP_ABI:=all}
+: ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:=/opt/android-sdk-update-manager}
+: ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:="$ANDROID_SDK_ROOT/ndk/23.1.7779620"}
+: PREFIXDIR=${PREFIXDIR:=/tmp/android-prefix}
+: DOWNLOADDIR=${DOWNLOADDIR:=/tmp/android-dl}
+: AABBASEDIR=${AABBASEDIR:=/tmp/wesnoth-aab-base}
+: APKBASEDIR=${APKBASEDIR:=/tmp}
+: API=${API:=29}
+: APP_ABI=${APP_ABI:=all}
 if [[ "$APP_ABI" == "all" ]]
 then
 	abis="armeabi-v7a arm64-v8a x86 x86_64"
 else
 	abis="$APP_ABI"
 fi
-: ${AABOUTPUT:="$ORIGIN/wesnoth-debug.aab"}
-: ${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
-: ${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
+: AABOUTPUT=${AABOUTPUT:="$ORIGIN/wesnoth-debug.aab"}
+: APKSOUTPUT=${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
+: APKOUTPUT=${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
 
 os=`uname -o`
 if [[ $os == Android ]]
@@ -74,7 +74,7 @@ then
 	# Limit threading on Android to keep from using more memory than the device can handle
 	nproc=1
 	# Android needs a custom aapt2; default to one in $PATH
-	: ${AAPT2:=`which aapt2`}
+	: AAPT2=${AAPT2:=`which aapt2`}
 	extra_flags="--aapt2=$AAPT2"
 else
 	nproc=`nproc`
