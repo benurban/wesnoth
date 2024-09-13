@@ -37,6 +37,7 @@ def generate(env):
     env.Append(LINKFLAGS = "-target $ANDROID_LLVM_TRIPLE$android_api")
     env.Append(LIBS = ["android", "log", "GLESv1_CM", "GLESv2"])
     env.Append(CPPDEFINES = ["SDL_MAIN_HANDLED"])
+    print("android-ndk: CPPDEFINES =", env["CPPDEFINES"]) # testing #
 
     assert env["android_home"]
     env["ENV"]["ANDROID_HOME"] = env["android_home"]
