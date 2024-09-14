@@ -64,14 +64,14 @@ jobs:
       - name: Download and build Wesnoth dependencies
         run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
-      - name: Build Wesnoth and create APKS
-        run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS_VERSION ./build-apks;
+      #- name: Build Wesnoth and create APKS
+      #  run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS_VERSION ./build-apks;
 
-      - name: Upload APKS
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: wesnoth-debug.apks
-          path: ${{ env.APKSOUTPUT }}
+      #- name: Upload APKS
+      #  uses: actions/upload-artifact@v4.3.1
+      #  with:
+      #    name: wesnoth-debug.apks
+      #    path: ${{ env.APKSOUTPUT }}
             
             #- name: Grant execute permission for gradlew
             #  run: chmod +x gradlew
