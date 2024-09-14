@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import json
 from subprocess import run
 from pathlib import Path
@@ -67,7 +68,7 @@ export CXX="$TOOLCHAIN/bin/{tool_prefix}clang++"
 export PKG_CONFIG_LIBDIR="{abi_prefix}/lib/pkgconfig"
 export PKG_CONFIG_PATH="{abi_prefix}/lib/pkgconfig"
 
-export BUILD="$(cc -dumpmachine || \"$CC\" -dumpmachine)"
+export BUILD="$(cc -dumpmachine || "$CC" -dumpmachine)"
 """)
 
     with open(abi_prefix / "android.ini", "w") as crossfile:
@@ -99,8 +100,8 @@ cpp_link_args = common_flags + ['-L' + libdir]
 
 [binaries]
 ar = toolchain / 'bin/llvm-ar'
-c = toolchain / 'bin' / 'clang'
-cxx = toolchain / 'bin' / 'clang++'
+c = toolchain / 'bin/clang'
+cxx = toolchain / 'bin/clang++'
 ld = toolchain / 'bin/ld'
 ranlib = toolchain / 'bin/llvm-ranlib'
 strip = toolchain / 'bin/llvm-strip'

@@ -8,7 +8,7 @@
 #   below) to bypass this requirement.
 # * The Android SDK must be installed, along with at least one version of the
 #   NDK.
-# * The build products from build-android-deps must be in $PREFIXDIR.
+# * The build products from build-android-deps.sh must be in $PREFIXDIR.
 # * python3 3.6 or later
 # * scons
 # FIXME: Figure out minimum version numbers.
@@ -45,7 +45,7 @@
 #              x86 x86_64
 #     Default: all
 
-cd "$(dirname $0)"
+cd -- "$(dirname $0)"
 ORIGIN="$(pwd)"
 pushd ../..
 	REPO="$(pwd)"
@@ -68,50 +68,52 @@ fi
 : APKSOUTPUT=${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
 : APKOUTPUT=${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
 
-os=`uname -o`
+os="$(uname -o)"
 if [[ $os == Android ]]
 then
 	# Limit threading on Android to keep from using more memory than the device can handle
 	nproc=1
 	# Android needs a custom aapt2; default to one in $PATH
-	: AAPT2=${AAPT2:=`which aapt2`}
+	: AAPT2=${AAPT2:="$(which aapt2)"}
 	extra_flags="--aapt2=$AAPT2"
 else
-	nproc=`nproc`
+	nproc="$(nproc)"
 	extra_flags=
 fi
 
-mkdir -p "$DOWNLOADDIR"
-url=https://github.com/google/bundletool/releases/download/1.16.0/bundletool-all-1.16.0.jar
+mkdir -p -- "$DOWNLOADDIR"
+url="https://github.com/google/bundletool/releases/download/1.16.0/bundletool-all-1.16.0.jar"
 bundletool="$DOWNLOADDIR/$(basename $url)"
 if [ ! -f "$bundletool" ]
 then
-	wget -nc $url -P "$DOWNLOADDIR"
+	wget -nc -P "$DOWNLOADDIR" -- "$url"
 fi
 
-rm -rf "$AABBASEDIR" || :
+rm -rf -- "$AABBASEDIR" || :
+
+sed -e "s/ANDROID_API/$API/g" < AndroidManifest.xml.in > AndroidManifest.xml
 
 for arch in $abis
 do
-	mkdir -p "$APKBASEDIR/wesnoth-$arch"
+	mkdir -p -- "$APKBASEDIR/wesnoth-$arch"
 	pushd "$APKBASEDIR/wesnoth-$arch"
-		scons -j$nproc -Y "$REPO" prefix="$PREFIXDIR/$arch" host=android-$arch ndkdir="$ANDROID_NDK_ROOT" android_home="$ANDROID_SDK_ROOT" android_api=$API apk
+		scons -j"$nproc" -Y "$REPO" prefix="$PREFIXDIR/$arch" host="android-$arch" ndkdir="$ANDROID_NDK_ROOT" android_home="$ANDROID_SDK_ROOT" android_api="$API" apk
 	popd
-	mkdir -p "$AABBASEDIR"
-	pushd "$AABBASEDIR"
+	mkdir -p -- "$AABBASEDIR"
+	pushd -- "$AABBASEDIR"
 		unzip -n "$APKBASEDIR/wesnoth-$arch/packaging/android/wesnoth-debug.apk"
 	popd
 done
-pushd "$AABBASEDIR"
+pushd -- "$AABBASEDIR"
 	mkdir manifest7
 	mv AndroidManifest.xml manifest/
 	mkdir dex
 	mv classes.dex dex/
-	zip -r base.zip *
+	zip -r base.zip -- *
 popd
-rm -f "$AABOUTPUT" || :
+rm -f -- "$AABOUTPUT" || :
 java -jar "$bundletool" build-bundle --modules="$AABBASEDIR/base.zip" --output="$AABOUTPUT"
-rm -f "$APKSOUTPUT" || :
+rm -f -- "$APKSOUTPUT" || :
 java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --output="$APKSOUTPUT" --mode=universal $extra_flags
-unzip "$APKSOUTPUT" universal.apk
-mv universal.apk "$APKOUTPUT"
+unzip "$APKSOUTPUT" "universal.apk"
+mv -f -- "universal.apk" "$APKOUTPUT"

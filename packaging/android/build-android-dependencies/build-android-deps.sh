@@ -44,6 +44,16 @@
 # PKG_CONFIG   The path to the pkg-config binary.
 #     Default: /usr/bin/pkg-config
 
+for cmd in autoreconf jam make meson ninja perl python3
+do
+	if ! which "$cmd" >/dev/null
+	then
+		echo "ERROR: Could not find $cmd." >&2
+		echo "Please ensure it is installed and reachable via your \$PATH" >&2
+		exit 1
+	fi
+done
+
 SOURCES=(
 https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
 https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz
@@ -71,64 +81,55 @@ https://curl.se/download/curl-8.1.1.tar.xz
 )
 PACKAGES=()
 
-cd `dirname "$0"`
-ORIGIN=`pwd`
+cd -- "$(dirname "$0")"
+ORIGIN="$(pwd)"
+: DOWNLOADDIR=${DOWNLOADDIR:=/tmp/android-dl}
 : BUILDDIR=${BUILDDIR:=/tmp/android-build}
 : PREFIXDIR=${PREFIXDIR:=/tmp/android-prefix}
-: DOWNLOADDIR=${DOWNLOADDIR:=/tmp/android-dl}
 
+export DOWNLOADDIR
+export BUILDDIR
 export PREFIXDIR
 
-./setup-toolchains.py
+python3 ./setup-toolchains.py
 . "$PREFIXDIR/globals.env"
 
-mkdir -p "$DOWNLOADDIR"
-mkdir -p "$BUILDDIR"
-mkdir -p "$PREFIXDIR"
+mkdir -p -- "$DOWNLOADDIR"
+mkdir -p -- "$BUILDDIR"
+mkdir -p -- "$PREFIXDIR"
 
-os=`uname -o`
+os="$(uname -o)"
 if [[ $os == Android ]]
 then
-	# Limit threading on Android to keep from using more memory than the device can handle
+	# Limit threading on Android to keep from using more memory than the device
+	# can handle
 	nproc=1
 else
-	nproc=`nproc`
+	nproc="$(nproc)"
 fi
 
-function has_pc {
-	pc=${1%-*}.pc
-	pc=${pc/freetype/freetype2}
-	pc=${pc/pcre2/libpcre2-8}
-	pc=${pc/glib/glib-2.0}
-	pc=${pc/pixman/pixman-1}
-	pc=${pc/libogg/ogg}
-	pc=${pc/curl/libcurl}
-	pc=${pc/SDL2.pc/sdl2.pc}
-	check=lib/pkgconfig/$pc
-	if [[ $package == *SDL2* ]]
-	then
-		return 1 # need all SDL packages regardless
-	elif [[ $package == *bzip2* ]]
-	then
-		check=lib/libbz2.a
-	elif [[ $package == *iconv* ]]
-	then
-		check=lib/libiconv.so
-	elif [[ $package == *gettext* ]]
-	then
-		check=bin/gettext
-	elif [[ $package == *vorbis* ]]
-	then
-		check=lib/libvorbis.so
-	elif [[ $package == *boost* ]]
-	then
-		check="lib/libboost_system-*.so"
-	fi
+has_pc () {
+	case $1 in
+		*SDL2*)    return 1 ;; # Rebuild all SDL packages regardless
+		*boost*)    check="lib/libboost_system-*.so" ;;
+		*bzip2*)    check="lib/libbz2.a" ;;
+		*curl*)     check="lib/pkgconfig/libcurl.pc" ;;
+		*freetype*) check="lib/pkgconfig/freetype2.pc" ;;
+		*gettext*)  check="bin/gettext" ;;
+		*glib*)     check="lib/pkgconfig/glib-2.0.pc" ;;
+		*iconv*)    check="lib/libiconv.so" ;;
+		*libogg*)   check="lib/pkgconfig/ogg.pc" ;;
+		*pcre2*)    check="lib/pkgconfig/libpcre2.pc" ;;
+		*pixman*)   check="lib/pkgconfig/pixman-1.pc"
+		*vorbis*)   check="lib/libvorbis.so" ;;
+		*)          check="lib/pkgconfig/${1%-*}.pc" ;;
+	esac
 	shift
-	for abi in $*
+	for abi in "$@"
 	do
-		# use ls instead of [[ -f ... ]] to allow wildcards
-		if ! ls "$PREFIXDIR"/$abi/$check >/dev/null 2>&1
+		# Use ls instead of [[ -f ... ]] to allow wildcards
+		# We only care about exit status, so using ls should be safe
+		if ! ls "$PREFIXDIR/$abi"/$check >/dev/null 2>&1
 		then
 			return 1
 		fi
@@ -136,34 +137,36 @@ function has_pc {
 	return 0
 }
 
-mkdir -p "$BUILDDIR/src"
-pushd "$BUILDDIR/src"
-for url in ${SOURCES[@]}
+mkdir -p -- "$BUILDDIR/src"
+pushd -- "$BUILDDIR/src"
+for url in "${SOURCES[@]}"
 do
-	archive=`basename $url`
-	package=${archive%.*.*}
-	if has_pc $package $APP_ABI
+	archive="$(basename "$url")"
+	package="${archive%.*.*}"
+	# We specifically want $APP_ABI to expand into multiple args,
+	# if it contains spaces
+	if has_pc "$package" $APP_ABI
 	then
 		continue
 	fi
-	if [ ! -d $package ]
+	if [ ! -d "$package" ]
 	then
 		if [ ! -f "$DOWNLOADDIR/$archive" ]
 		then
-			wget -nc $url -P "$DOWNLOADDIR"
+			wget -nc -P "$DOWNLOADDIR" -- "$url"
 		fi
 		tar -xf "$DOWNLOADDIR/$archive"
 		if [ -f "$ORIGIN/${package%-*}.patch" ]
 		then
 			patch="$ORIGIN/${package%-*}.patch"
-			patch -d $package -p1 -i "$patch"
+			patch -d "$package" -p1 -i "$patch"
 		fi
 		if [ -f "$ORIGIN/${package%-*}.autotools.patch" ]
 		then
 			patch="$ORIGIN/${package%-*}.autotools.patch"
-			pushd $package
+			pushd -- "$package"
 			patch -p1 -i "$patch"
-			if [[ $package == *"SDL2"* ]]
+			if [[ $package == *SDL2* ]]
 			then
 				./autogen.sh
 				if [ -f android-project/app/jni/Android.mk ]
@@ -172,7 +175,7 @@ do
 					cp android-project/app/jni/Android.mk ../SDL2-ndk-build/jni/
 					sed -e 's/\b\(APP_ABI *:= *\).*/\1'"$APP_ABI"'/' -e 's/\b\(APP_PLATFORM *= *\).*/\1'"$APP_PLATFORM"'/' < android-project/app/jni/Application.mk > ../SDL2-ndk-build/jni/Application.mk
 				fi
-				ln -sf ../../$package ../SDL2-ndk-build/jni/${package%-*}
+				ln -sf "../../$package" "../SDL2-ndk-build/jni/${package%-*}"
 			else
 				autoreconf
 			fi
@@ -180,34 +183,30 @@ do
 		fi
 	fi
 
-	PACKAGES+=($package)
+	PACKAGES+=("$package")
 done
 popd
 
 for abi in $APP_ABI
 do
-	rm -rf "$BUILDDIR/$abi"
+	rm -rf -- "$BUILDDIR/$abi"
 
 	. "$PREFIXDIR/$abi/android.env"
 
-	for package in ${PACKAGES[@]}
+	for package in "${PACKAGES[@]}"
 	do
-		if has_pc $package $abi
+		if has_pc "$package" "$abi"
 		then
 			continue
 		fi
-		if [ -f ${package%-*}.config ]
+		if [ -f "${package%-*}.config" ]
 		then
-			extra_flags=`< ${package%-*}.config`
+			extra_flags="$(< "${package%-*}.config")"
+		elif [[ $package == boost* ]] && [ -f "${package%%_*}.config" ]
+		then
+			extra_flags="$(< "${package%%_*}.config")"
 		else
 			extra_flags=
-		fi
-		if [[ $package == boost* ]]
-		then
-			if [ -f ${package%%_*}.config ]
-			then
-				extra_flags=`< ${package%%_*}.config`
-			fi
 		fi
 
 		host_arg="--host=$HOST"
@@ -215,34 +214,34 @@ do
 
 		src_dir="$BUILDDIR/src/$package"
 		build_dir="$BUILDDIR/$abi/$package"
-		mkdir -p "$build_dir"
+		mkdir -p -- "$build_dir"
 		if [ -f "$src_dir/configure" ]
 		then
-			if [[ $package == freetype* ]] && [[ $os == Android ]]
+			if [[ "$package" == freetype* && "$os" == Android ]]
 			then
 				# My Android build environment messes up freetype's libtool when built
 				# in a different directory
-				pushd "$src_dir"
+				pushd -- "$src_dir"
 				make clean || : #Original Makefile doesn't include clean for some reason
-				./configure $host_arg $build_arg --prefix="$PREFIXDIR/$abi" $extra_flags
+				./configure "$host_arg" "$build_arg" --prefix="$PREFIXDIR/$abi" $extra_flags
 			else
-				pushd "$build_dir"
-				"$src_dir/configure" $host_arg $build_arg --prefix="$PREFIXDIR/$abi" $extra_flags
+				pushd -- "$build_dir"
+				"$src_dir/configure" "$host_arg" "$build_arg" --prefix="$PREFIXDIR/$abi" $extra_flags
 			fi
-			make -j$nproc
+			make -j"$nproc"
 			make install
 			popd
 			continue
 		fi
-		if [ -f "$src_dir/Configure" ] #openssl's Perl configure
+		if [ -f "$src_dir/Configure" ] # OpenSSL's Perl Configure
 		then
-			pushd "$src_dir"
+			pushd -- "$src_dir"
 			if [ -f Makefile ]
 			then
 				make clean
 			fi
-			./Configure --prefix="$PREFIXDIR/$abi" $extra_flags android-$ANDROID_ARCH -D__ANDROID_API__=$API
-			make -j$nproc
+			./Configure --prefix="$PREFIXDIR/$abi" $extra_flags "android-$ANDROID_ARCH" "-D__ANDROID_API__=$API"
+			make -j"$nproc"
 			make install
 			popd
 			continue
@@ -256,13 +255,13 @@ do
 		fi
 		if [ -f "$src_dir/Jamroot" ]
 		then
-			pushd "$src_dir"
+			pushd -- "$src_dir"
 			rm -rf ./bin.v2
 			if [ ! -f ./b2 ]
 			then
 				./bootstrap.sh
 			fi
-			if [[ $ANDROID_ARCH == *"arm"* ]]
+			if [[ $ANDROID_ARCH == *arm* ]]
 			then
 				BCABI="aapcs"
 				BOOSTARCH="arm"
@@ -270,15 +269,15 @@ do
 				BCABI="sysv"
 				BOOSTARCH="x86"
 			fi
-			./b2 --user-config="$PREFIXDIR/$abi/android.jam" --prefix="$PREFIXDIR/$abi" target-os=android architecture=$BOOSTARCH address-model=$BITNESS abi=$BCABI binary-format=elf install $extra_flags
+			./b2 --user-config="$PREFIXDIR/$abi/android.jam" --prefix="$PREFIXDIR/$abi" target-os=android architecture="$BOOSTARCH" address-model="$BITNESS" abi="$BCABI" binary-format=elf install $extra_flags
 			popd
 			continue
 		fi
 		if [ -f "$src_dir/Makefile" ] # bzip uses plain Make
 		then
-			pushd "$src_dir"
+			pushd -- "$src_dir"
 			make clean
-			make -j$nproc CC="$CC -fPIC" AR="$AR" RANLIB="$RANLIB" PREFIX="$PREFIXDIR/$abi"
+			make -j"$nproc" CC="$CC -fPIC" AR="$AR" RANLIB="$RANLIB" PREFIX="$PREFIXDIR/$abi"
 			make install CC="$CC -fPIC" AR="$AR" RANLIB="$RANLIB" PREFIX="$PREFIXDIR/$abi"
 			popd
 			continue
@@ -286,9 +285,9 @@ do
 	done
 done
 
-cd "$BUILDDIR/src/SDL2-ndk-build"
+cd -- "$BUILDDIR/src/SDL2-ndk-build"
 "$NDK/ndk-build"
 for abi in $APP_ABI
 do
-	cp libs/$abi/*.so "$PREFIXDIR/$abi/lib/"
+	cp -- "libs/$abi/"*.so "$PREFIXDIR/$abi/lib/"
 done
