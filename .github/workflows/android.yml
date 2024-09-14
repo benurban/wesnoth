@@ -38,7 +38,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4.0.0
         with:
-          java-version: '${{ JDK_VERSION }}'
+          java-version: '${{ env.JDK_VERSION }}'
           distribution: 'temurin'
 
       - name: Cache Android SDK
