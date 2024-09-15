@@ -30,9 +30,9 @@ def add_libraries_to_archive(target, source, env):
         for library in source[2:]:
             apk.write(library.path, env.subst("lib/$ANDROID_ABI/") + library.name)
 
-alt_abi = os.environ["HOST"].split("-", 1)[0]
+alt_host = os.environ["HOST"]
 
-unaligned = env.Command("wesnoth.apk.unaligned", [apk[0]] + bytecode + env.Glob("$prefix/lib/*.so*") + [f"$ndkdir/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/{alt_abi}/libc++_shared.so", "lib/libmain.so"], [
+unaligned = env.Command("wesnoth.apk.unaligned", [apk[0]] + bytecode + env.Glob("$prefix/lib/*.so*") + [f"$ndkdir/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/{alt_host}/libc++_shared.so", "lib/libmain.so"], [
     "cp ${SOURCES[0]} $TARGET && zip -j $TARGET ${SOURCES[1]}",
     add_libraries_to_archive
     ])
