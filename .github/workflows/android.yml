@@ -7,23 +7,14 @@ jobs:
     
     runs-on: ubuntu-latest
     env:
-      ANDROID_API: 29
       ANDROID_BUILD_TOOLS_VERSION: 34.0.0
       ANDROID_NDK_VERSION: 26.3.11579264
-      ANDROID_SDK_PACKAGES: 'tools platform-tools platform;android-${{ env.ANDROID_API }} build-tools;${{ env.ANDROID_BUILD_TOOLS_VERSION }} ndk;${{ env.ANDROID_NDK_VERSION }}'
+      ANDROID_SDK_PACKAGES: 'tools platform-tools platform;android-29 build-tools;34.0.0 ndk;26.3.11579264'
       JDK_VERSION: 17
-      API: ${{ env.ANDROID_API }}
+      API: 29
       ANDROID_SDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk
-      ANDROID_NDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
+      ANDROID_NDK_ROOT: ${{ github.WORKSPACE }}/.android/sdk/ndk/26.3.11579264
       BUILDBASEDIR: ${{ github.WORKSPACE }}/packaging/android
-      PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
-      DOWNLOADDIR: ${{ env.BUILDBASEDIR }}/download
-      BUILDDIR: ${{ env.BUILDBASEDIR }}/build
-      AABBASEDIR: ${{ env.BUILDBASEDIR }}/aab-base
-      APKBASEDIR: ${{ env.BUILDBASEDIR }}
-      AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
-      APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
-      APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
 
     steps:
       - name: Checkout Repo
@@ -57,18 +48,35 @@ jobs:
       - name: Cache Wesnoth dependencies
         id: cache-deps
         uses: actions/cache@v3
+        env: PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
         with:
           key: wesnoth-android-deps-r1
           path: ${{ env.PREFIXDIR }}
 
       - name: Download and build Wesnoth dependencies
+        env:
+          PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
+          DOWNLOADDIR: ${{ env.BUILDBASEDIR }}/download
+          BUILDDIR: ${{ env.BUILDBASEDIR }}/build
         run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
       #- name: Build Wesnoth and create APKS
+      #  env:
+      #    PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
+      #    DOWNLOADDIR: ${{ env.BUILDBASEDIR }}/download
+      #    AABBASEDIR: ${{ env.BUILDBASEDIR }}/aab-base
+      #    APKBASEDIR: ${{ env.BUILDBASEDIR }}
+      #    AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
+      #    APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
+      #    APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
       #  run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS_VERSION ./build-apks;
 
       #- name: Upload APKS
       #  uses: actions/upload-artifact@v4.3.1
+      #  env:
+      #    AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
+      #    APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
+      #    APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
       #  with:
       #    name: wesnoth-debug.apks
       #    path: ${{ env.APKSOUTPUT }}
