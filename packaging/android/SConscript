@@ -1,5 +1,7 @@
 # vi: syntax=python:et:ts=4
 
+import os
+
 Import("*")
 
 if not env.get("AAPT"):
@@ -28,7 +30,7 @@ def add_libraries_to_archive(target, source, env):
         for library in source[2:]:
             apk.write(library.path, env.subst("lib/$ANDROID_ABI/") + library.name)
 
-alt_abi = env["HOST"].split("-", 1)[0]
+alt_abi = os.envirion["HOST"].split("-", 1)[0]
 
 unaligned = env.Command("wesnoth.apk.unaligned", [apk[0]] + bytecode + env.Glob("$prefix/lib/*.so*") + [f"$ndkdir/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/{alt_abi}/libc++_shared.so", "lib/libmain.so"], [
     "cp ${SOURCES[0]} $TARGET && zip -j $TARGET ${SOURCES[1]}",

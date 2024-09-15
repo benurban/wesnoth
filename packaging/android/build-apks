@@ -95,10 +95,10 @@ sed -e "s/ANDROID_API/$API/g" < AndroidManifest.xml.in > AndroidManifest.xml
 
 for arch in $abis
 do
-	HOST="$(. "$PREFIXDIR/globals.env" && . "$PREFIXDIR/$arch/android.env" && echo "$HOST")"
+	export HOST="$(. "$PREFIXDIR/globals.env" && . "$PREFIXDIR/$arch/android.env" && echo "$HOST")"
 	mkdir -p -- "$APKBASEDIR/wesnoth-$arch"
 	pushd "$APKBASEDIR/wesnoth-$arch"
-		scons -j"$nproc" -Y "$REPO" prefix="$PREFIXDIR/$arch" host="android-$arch" HOST="$HOST" ndkdir="$ANDROID_NDK_ROOT" android_home="$ANDROID_SDK_ROOT" android_api="$API" apk
+		scons -j"$nproc" -Y "$REPO" prefix="$PREFIXDIR/$arch" host="android-$arch" ndkdir="$ANDROID_NDK_ROOT" android_home="$ANDROID_SDK_ROOT" android_api="$API" apk
 	popd
 	mkdir -p -- "$AABBASEDIR"
 	pushd -- "$AABBASEDIR"
