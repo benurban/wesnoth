@@ -117,7 +117,7 @@ has_pc () {
 		*glib*)     check="lib/pkgconfig/glib-2.0.pc" ;;
 		*iconv*)    check="lib/libiconv.so" ;;
 		*libogg*)   check="lib/pkgconfig/ogg.pc" ;;
-		*pcre2*)    check="lib/pkgconfig/libpcre2.pc" ;;
+		*pcre2*)    check="lib/pkgconfig/libpcre2-8.pc" ;;
 		*pixman*)   check="lib/pkgconfig/pixman-1.pc" ;;
 		*vorbis*)   check="lib/libvorbis.so" ;;
 		*)          check="lib/pkgconfig/${1%-*}.pc" ;;
