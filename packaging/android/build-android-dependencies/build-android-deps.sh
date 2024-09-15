@@ -78,7 +78,6 @@ https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.bz2
 https://www.openssl.org/source/openssl-3.1.0.tar.gz
 https://curl.se/download/curl-8.1.1.tar.xz
 )
-PACKAGES=()
 
 cd -- "$(dirname "$0")"
 ORIGIN="$(pwd)"
@@ -182,36 +181,31 @@ do
 		fi
 	fi
 
-	PACKAGES+=("$package")
-done
-popd
+	if [ -f "${package%-*}.config" ]
+	then
+		extra_flags="$(< "${package%-*}.config")"
+	elif [[ $package == boost* ]] && [ -f "${package%%_*}.config" ]
+	then
+		extra_flags="$(< "${package%%_*}.config")"
+	else
+		extra_flags=
+	fi
 
-for abi in $APP_ABI
-do
-	rm -rf -- "$BUILDDIR/$abi"
+	src_dir="$BUILDDIR/src/$package"
 
-	. "$PREFIXDIR/$abi/android.env"
-
-	for package in "${PACKAGES[@]}"
+	for abi in $APP_ABI
 	do
 		if has_pc "$package" "$abi"
 		then
 			continue
 		fi
-		if [ -f "${package%-*}.config" ]
-		then
-			extra_flags="$(< "${package%-*}.config")"
-		elif [[ $package == boost* ]] && [ -f "${package%%_*}.config" ]
-		then
-			extra_flags="$(< "${package%%_*}.config")"
-		else
-			extra_flags=
-		fi
+		
+		rm -rf -- "$BUILDDIR/$abi"
+
+		. "$PREFIXDIR/$abi/android.env"
 
 		host_arg="--host=$HOST"
 		build_arg="--build=$BUILD"
-
-		src_dir="$BUILDDIR/src/$package"
 		build_dir="$BUILDDIR/$abi/$package"
 		mkdir -p -- "$build_dir"
 		if [ -f "$src_dir/configure" ]
@@ -281,8 +275,14 @@ do
 			popd
 			continue
 		fi
+		rm -rf -- "$build_dir"
 	done
+	if [[ $package != *SDL* ]]
+	then
+		rm -rf -- "$src_dir"
+	fi
 done
+popd
 
 cd -- "$BUILDDIR/src/SDL2-ndk-build"
 "$NDK/ndk-build"
