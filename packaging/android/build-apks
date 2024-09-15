@@ -106,7 +106,7 @@ do
 	popd
 done
 pushd -- "$AABBASEDIR"
-	mkdir manifest7
+	mkdir manifest
 	mv AndroidManifest.xml manifest/
 	mkdir dex
 	mv classes.dex dex/
