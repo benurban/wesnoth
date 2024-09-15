@@ -45,7 +45,7 @@ jobs:
         id: cache-android-sdk
         uses: actions/cache@v3
         with:
-          key: android-sdk ${{ env.ANDROOD_SDK_PACKAGES }}
+          key: android-sdk ${{ env.ANDROID_SDK_PACKAGES }}
           path: ${{ env.ANDROID_SDK_ROOT }}
 
       - if: ${{ steps.cache-android-sdk.outputs.cache-hit  != 'true' }}
