@@ -181,12 +181,12 @@ do
 		fi
 	fi
 
-	if [ -f "${package%-*}.config" ]
+	if [ -f "$ORIGIN/${package%-*}.config" ]
 	then
-		extra_flags="$(< "${package%-*}.config")"
-	elif [[ $package == boost* ]] && [ -f "${package%%_*}.config" ]
+		extra_flags="$(< "$ORIGIN/${package%-*}.config")"
+	elif [[ $package == boost* ]] && [ -f "$ORIGIN/${package%%_*}.config" ]
 	then
-		extra_flags="$(< "${package%%_*}.config")"
+		extra_flags="$(< "$ORIGIN/${package%%_*}.config")"
 	else
 		extra_flags=
 	fi
@@ -210,7 +210,7 @@ do
 		mkdir -p -- "$build_dir"
 		if [ -f "$src_dir/configure" ]
 		then
-			if [[ "$package" == freetype* && "$os" == Android ]]
+			if [[ $package == freetype* && $os == Android ]]
 			then
 				# My Android build environment messes up freetype's libtool when built
 				# in a different directory
