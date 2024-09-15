@@ -88,6 +88,16 @@ jobs:
           APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
         run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS_VERSION ./build-apks;
 
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4.3.1
+        env:
+          AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
+          APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
+          APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
+        with:
+          name: wesnoth-debug.aab
+          path: ${{ env.AABOUTPUT }}
+
       - name: Upload APKS
         uses: actions/upload-artifact@v4.3.1
         env:
@@ -97,6 +107,16 @@ jobs:
         with:
           name: wesnoth-debug.apks
           path: ${{ env.APKSOUTPUT }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4.3.1
+        env:
+          AABOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.aab
+          APKSOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apks
+          APKOUTPUT: ${{ env.BUILDBASEDIR }}/wesnoth-debug.apk
+        with:
+          name: wesnoth-debug.apk
+          path: ${{ env.APKOUTPUT }}
             
             #- name: Grant execute permission for gradlew
             #  run: chmod +x gradlew
