@@ -62,6 +62,7 @@ jobs:
           path: ${{ env.PREFIXDIR }}
 
       - name: Download and build Wesnoth dependencies
+        if: ${{ steps.restore-deps-cache.outputs.cache-hit  != 'true' }}
         env:
           PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
           DOWNLOADDIR: ${{ env.BUILDBASEDIR }}/download
@@ -69,7 +70,7 @@ jobs:
         run: cd packaging/android/build-android-dependencies; ./build-android-deps.sh;
 
       - name: Save Wesnoth dependencies cache
-        if: always()
+        if: ${{ steps.restore-deps-cache.outputs.cache-hit  != 'true' }}
         uses: actions/cache/save@v4
         env:
           PREFIXDIR: ${{ env.BUILDBASEDIR }}/prefix
