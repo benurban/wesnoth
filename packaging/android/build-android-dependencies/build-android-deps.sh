@@ -109,7 +109,7 @@ fi
 has_pc () {
 	case $1 in
 		*SDL2*)    return 1 ;; # Rebuild all SDL packages regardless
-		*boost*)    check="lib/libboost_system-*.so" ;;
+		*boost*)    check="lib/libboost_system*.so" ;;
 		*bzip2*)    check="lib/libbz2.a" ;;
 		*curl*)     check="lib/pkgconfig/libcurl.pc" ;;
 		*freetype*) check="lib/pkgconfig/freetype2.pc" ;;
