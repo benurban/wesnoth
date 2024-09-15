@@ -9,7 +9,6 @@
 # * The Android SDK must be installed, along with at least one version of the
 #   NDK.
 # * autoconf
-# * jam
 # * make
 # * meson
 # * ninja
@@ -44,7 +43,7 @@
 # PKG_CONFIG   The path to the pkg-config binary.
 #     Default: /usr/bin/pkg-config
 
-for cmd in autoreconf jam make meson ninja perl python3
+for cmd in autoreconf make meson ninja perl python3
 do
 	if ! which "$cmd" >/dev/null
 	then
@@ -120,7 +119,7 @@ has_pc () {
 		*iconv*)    check="lib/libiconv.so" ;;
 		*libogg*)   check="lib/pkgconfig/ogg.pc" ;;
 		*pcre2*)    check="lib/pkgconfig/libpcre2.pc" ;;
-		*pixman*)   check="lib/pkgconfig/pixman-1.pc"
+		*pixman*)   check="lib/pkgconfig/pixman-1.pc" ;;
 		*vorbis*)   check="lib/libvorbis.so" ;;
 		*)          check="lib/pkgconfig/${1%-*}.pc" ;;
 	esac
