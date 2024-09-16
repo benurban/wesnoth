@@ -68,6 +68,31 @@ fi
 : APKSOUTPUT=${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
 : APKOUTPUT=${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
 
+# It should be safe to repeat --verbose
+if [ -n "$KEYSTORE" ] && [ -n "$KEY_ALIAS" ]
+then
+	ARG_KS="--ks=$KEYSTORE"
+	ARG_KS_KEY_ALIAS="--ks-key-alias=$KEY_ALIAS"
+	if [ -n "$KS_PASSWORD" ]
+	then
+		ARG_KS_PASS="--key-pass=pass:$KS_PASSWORD"
+	else
+		ARG_KS_PASS="--verbose"
+	fi
+	if [ -n "$KEY_PASSWORD" ]
+	then
+		ARG_KEY_PASS="--key-pass=pass:$KEY_PASSWORD"
+	else
+		ARG_KEY_PASS="--verbose"
+	fi
+else
+	ARG_KS="--verbose"
+	ARG_KS_KEY_ALIAS="--verbose"
+	ARG_KS_PASS="--verbose"
+	ARG_KEY_PASS="--verbose"
+fi
+extra_flags="--verbose"
+
 os="$(uname -o)"
 if [[ $os == Android ]]
 then
@@ -75,10 +100,9 @@ then
 	nproc=1
 	# Android needs a custom aapt2; default to one in $PATH
 	: AAPT2=${AAPT2:="$(which aapt2)"}
-	extra_flags="--aapt2=$AAPT2"
+	extra_flags+="--aapt2=$AAPT2"
 else
 	nproc="$(nproc)"
-	extra_flags=
 fi
 
 mkdir -p -- "$DOWNLOADDIR"
@@ -112,9 +136,7 @@ pushd -- "$AABBASEDIR"
 	mv classes.dex dex/
 	zip -r base.zip -- *
 popd
-rm -f -- "$AABOUTPUT" || :
-java -jar "$bundletool" build-bundle --modules="$AABBASEDIR/base.zip" --output="$AABOUTPUT"
-rm -f -- "$APKSOUTPUT" || :
-java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --output="$APKSOUTPUT" --mode=universal $extra_flags
+java -jar "$bundletool" build-bundle --modules="$AABBASEDIR/base.zip" --overwrite --output="$AABOUTPUT"
+java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --overwrite --output="$APKSOUTPUT" --mode=universal "$ARG_KS" "$ARG_KS_KEY_ALIAS" "$ARG_KS_PASS" "$ARG_KEY_PASS" $extra_flags
 unzip "$APKSOUTPUT" "universal.apk"
 mv -f -- "universal.apk" "$APKOUTPUT"
