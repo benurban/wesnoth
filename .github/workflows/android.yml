@@ -90,7 +90,7 @@ jobs:
         run: ls -lh; cd packaging/android; PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS_VERSION ./build-apks;
 
       - name: Sign build products
-        uses: r0adkill/sign-android-release@v1
+        uses: r0adkll/sign-android-release@v1
         id: sign-app
         with:
           releaseDirectory: ${{ env.BUILDBASEDIR }}
