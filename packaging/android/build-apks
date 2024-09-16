@@ -68,30 +68,42 @@ fi
 : APKSOUTPUT=${APKSOUTPUT:="$ORIGIN/wesnoth-debug.apks"}
 : APKOUTPUT=${APKOUTPUT:="$ORIGIN/wesnoth-debug.apk"}
 
+# It should be safevto repeat -verbose
+JS_FILLER="-verbose"
 # It should be safe to repeat --verbose
+BT_FILLER="--verbose"
 if [ -n "$KEYSTORE" ] && [ -n "$KEY_ALIAS" ]
 then
-	ARG_KS="--ks=$KEYSTORE"
-	ARG_KS_KEY_ALIAS="--ks-key-alias=$KEY_ALIAS"
+	JS_KS="-keystore=$KEYSTORE"
+	BT_KS="--ks=$KEYSTORE"
+	JS_KEY_ALIAS="$KEY_ALIAS"
+	BT_KEY_ALIAS="--ks-key-alias=$KEY_ALIAS"
 	if [ -n "$KS_PASSWORD" ]
 	then
-		ARG_KS_PASS="--key-pass=pass:$KS_PASSWORD"
+		JS_KS_PASSWORD="-storepass=$KS_PASSWORD"
+		BT_KS_PASSWORD="--key-pass=pass:$KS_PASSWORD"
 	else
-		ARG_KS_PASS="--verbose"
+		JS_KS_PASSWORD="$JS_FILLER"
+		BT_KS_PASSWORD="$BT_FILLER"
 	fi
 	if [ -n "$KEY_PASSWORD" ]
 	then
-		ARG_KEY_PASS="--key-pass=pass:$KEY_PASSWORD"
+		JS_KEY_PASSWORD="-keypass=$KEY_PASSWORD"
+		BT_KEY_PASSWORD="--key-pass=pass:$KEY_PASSWORD"
 	else
-		ARG_KEY_PASS="--verbose"
+		JS_KEY_PASSWORD="$JS_FILLER"
+		BT_KEY_PASSWORD="$BT_FILLER"
 	fi
 else
-	ARG_KS="--verbose"
-	ARG_KS_KEY_ALIAS="--verbose"
-	ARG_KS_PASS="--verbose"
-	ARG_KEY_PASS="--verbose"
+	JS_KS="$JS_FILLER"
+	BT_KS="$BT_FILLER"
+	JS_KEY_ALIAS="$JS_FILLER"
+	BT_KEY_ALIAS="$BT_FILLER"
+	JS_KS_PASSWORD="$JS_FILLER"
+	BT_KS_PASSWORD="$BT_FILLER"
+	JS_KEY_PASSWORD="$JS_FILLER"
+	BT_KEY_PASSWORD="$BT_FILLER"
 fi
-extra_flags="--verbose"
 
 os="$(uname -o)"
 if [[ $os == Android ]]
@@ -100,9 +112,10 @@ then
 	nproc=1
 	# Android needs a custom aapt2; default to one in $PATH
 	: AAPT2=${AAPT2:="$(which aapt2)"}
-	extra_flags+="--aapt2=$AAPT2"
+	extra_flags="--aapt2=$AAPT2"
 else
 	nproc="$(nproc)"
+	extra_flags=
 fi
 
 mkdir -p -- "$DOWNLOADDIR"
@@ -137,6 +150,10 @@ pushd -- "$AABBASEDIR"
 	zip -r base.zip -- *
 popd
 java -jar "$bundletool" build-bundle --modules="$AABBASEDIR/base.zip" --overwrite --output="$AABOUTPUT"
-java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --overwrite --output="$APKSOUTPUT" --mode=universal "$ARG_KS" "$ARG_KS_KEY_ALIAS" "$ARG_KS_PASS" "$ARG_KEY_PASS" $extra_flags
+if [ -n "$KEYSTORE" ] && [ -n "$KEY_ALIAS" ]
+then
+	jarsigner "$JS_KS" "$JS_KS_PASSWORD" "$AABOUTPUT" "$JS_KEY_ALIAS" "$JS_KEY_PASSWORD" "$JS_FILLER"
+fi
+java -jar "$bundletool" build-apks --bundle="$AABOUTPUT" --overwrite --output="$APKSOUTPUT" --mode=universal "$BT_KS" "$BT_KS_PASSWORD" "$BT_KEY_ALIAS" "$BT_KEY_PASSWORD" "$BT_FILLER" $extra_flags
 unzip "$APKSOUTPUT" "universal.apk"
 mv -f -- "universal.apk" "$APKOUTPUT"
